@@ -10,18 +10,29 @@ const connectBtn = document.getElementById("connect");
 const disconnectBtn = document.getElementById("disconnect");
 const videoEl = document.getElementById("video");
 const useMjpegEl = document.getElementById("useMjpeg");
+const thermalEl = document.getElementById("thermalVideo");
+const useMjpegThermalEl = document.getElementById("useMjpegThermal");
 const telemetryEl = document.getElementById("telemetry");
 const commandInput = document.getElementById("commandInput");
 const sendCommandBtn = document.getElementById("sendCommand");
 const commandLog = document.getElementById("commandLog");
 const logEl = document.getElementById("log");
+const driveUpBtn = document.getElementById("driveUp");
+const driveDownBtn = document.getElementById("driveDown");
+const driveLeftBtn = document.getElementById("driveLeft");
+const driveRightBtn = document.getElementById("driveRight");
+const driveStopBtn = document.getElementById("driveStop");
+const speedDial = document.getElementById("speedDial");
+const speedValue = document.getElementById("speedValue");
 
 let videoWs = null;
+let thermalWs = null;
 let telemetryWs = null;
 let commandWs = null;
-let currentVideoUrl = null;
 let firstFrameSeen = false;
-let videoFramePending = false;
+const videoState = { pending: false, currentUrl: null };
+const thermalState = { pending: false, currentUrl: null };
+const pressedKeys = new Set();
 
 function log(message) {
   const line = `[${new Date().toLocaleTimeString()}] ${message}`;
@@ -40,6 +51,31 @@ function getWsBase() {
   const httpBase = getServerBase();
   if (!httpBase) return "";
   return httpBase.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+}
+
+function updateImageFromBuffer(imgEl, buffer, state) {
+  if (state.pending) {
+    return;
+  }
+  const blob = new Blob([buffer], { type: "image/jpeg" });
+  const nextUrl = URL.createObjectURL(blob);
+  state.pending = true;
+  imgEl.src = nextUrl;
+  if (state.currentUrl) {
+    URL.revokeObjectURL(state.currentUrl);
+  }
+  state.currentUrl = nextUrl;
+}
+
+function resetImageState(imgEl, state) {
+  state.pending = false;
+  if (state.currentUrl) {
+    URL.revokeObjectURL(state.currentUrl);
+  }
+  state.currentUrl = null;
+  if (imgEl) {
+    imgEl.src = "";
+  }
 }
 
 function saveServerUrl() {
@@ -122,25 +158,15 @@ function connectSockets(robotId) {
     const httpBase = getServerBase();
     const streamUrl = `${httpBase}/mjpeg/${encodeURIComponent(robotId)}?t=${Date.now()}`;
     videoEl.src = streamUrl;
-    currentVideoUrl = null;
-    videoFramePending = false;
+    videoState.pending = false;
+    videoState.currentUrl = null;
     setStatus(`video connected: ${robotId} (mjpeg)`);
     log("mjpeg stream connected");
   } else {
     videoWs = new WebSocket(`${wsBase}/ws/video/client/${robotId}`);
     videoWs.binaryType = "arraybuffer";
     videoWs.onmessage = (event) => {
-      if (videoFramePending) {
-        return;
-      }
-      const blob = new Blob([event.data], { type: "image/jpeg" });
-      const nextUrl = URL.createObjectURL(blob);
-      videoFramePending = true;
-      videoEl.src = nextUrl;
-      if (currentVideoUrl) {
-        URL.revokeObjectURL(currentVideoUrl);
-      }
-      currentVideoUrl = nextUrl;
+      updateImageFromBuffer(videoEl, event.data, videoState);
     };
     videoWs.onopen = () => {
       setStatus(`video connected: ${robotId}`);
@@ -151,6 +177,27 @@ function connectSockets(robotId) {
       log("video socket disconnected");
     };
     videoWs.onerror = () => log("video socket error");
+  }
+
+  const useThermalMjpeg = useMjpegThermalEl && useMjpegThermalEl.checked;
+  if (useThermalMjpeg) {
+    const httpBase = getServerBase();
+    const streamUrl = `${httpBase}/mjpeg/thermal/${encodeURIComponent(
+      robotId
+    )}?t=${Date.now()}`;
+    thermalEl.src = streamUrl;
+    thermalState.pending = false;
+    thermalState.currentUrl = null;
+    log("thermal mjpeg stream connected");
+  } else {
+    thermalWs = new WebSocket(`${wsBase}/ws/thermal/client/${robotId}`);
+    thermalWs.binaryType = "arraybuffer";
+    thermalWs.onmessage = (event) => {
+      updateImageFromBuffer(thermalEl, event.data, thermalState);
+    };
+    thermalWs.onopen = () => log("thermal socket connected");
+    thermalWs.onclose = () => log("thermal socket disconnected");
+    thermalWs.onerror = () => log("thermal socket error");
   }
 
   telemetryWs = new WebSocket(`${wsBase}/ws/telemetry/client/${robotId}`);
@@ -185,21 +232,35 @@ function connectSockets(robotId) {
 }
 
 function disconnectSockets() {
-  [videoWs, telemetryWs, commandWs].forEach((ws) => {
+  [videoWs, thermalWs, telemetryWs, commandWs].forEach((ws) => {
     if (ws && ws.readyState <= 1) {
       ws.close();
     }
   });
   videoWs = null;
+  thermalWs = null;
   telemetryWs = null;
   commandWs = null;
   firstFrameSeen = false;
-  videoFramePending = false;
-  if (videoEl) {
-    videoEl.src = "";
-  }
+  resetImageState(videoEl, videoState);
+  resetImageState(thermalEl, thermalState);
   setStatus("disconnected");
   log("disconnected");
+}
+
+function sendDriveCommand(command) {
+  if (!commandWs || commandWs.readyState !== WebSocket.OPEN) {
+    return;
+  }
+  const speed = speedDial ? Number(speedDial.value || 0) : 0;
+  const payload = {
+    client_id: ensureClientId(),
+    command,
+    speed,
+    ts: Date.now(),
+  };
+  commandWs.send(JSON.stringify(payload));
+  commandLog.textContent = `[CLIENT] ${command} speed=${speed}\n` + commandLog.textContent;
 }
 
 function sendCommand() {
@@ -237,6 +298,32 @@ connectBtn.addEventListener("click", () => {
 disconnectBtn.addEventListener("click", disconnectSockets);
 sendCommandBtn.addEventListener("click", sendCommand);
 
+function bindHoldButton(btn, command, stopCommand) {
+  if (!btn) return;
+  const start = (event) => {
+    event.preventDefault();
+    sendDriveCommand(command);
+  };
+  const stop = (event) => {
+    event.preventDefault();
+    sendDriveCommand(stopCommand);
+  };
+  btn.addEventListener("mousedown", start);
+  btn.addEventListener("touchstart", start);
+  btn.addEventListener("mouseup", stop);
+  btn.addEventListener("mouseleave", stop);
+  btn.addEventListener("touchend", stop);
+  btn.addEventListener("touchcancel", stop);
+}
+
+bindHoldButton(driveUpBtn, "MOVE_FORWARD", "FORWARD_STOP");
+bindHoldButton(driveDownBtn, "MOVE_BACK", "BACK_STOP");
+bindHoldButton(driveLeftBtn, "MOVE_LEFT", "LEFT_STOP");
+bindHoldButton(driveRightBtn, "MOVE_RIGHT", "RIGHT_STOP");
+if (driveStopBtn) {
+  driveStopBtn.addEventListener("click", () => sendDriveCommand("STOP"));
+}
+
 commandInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     sendCommand();
@@ -247,16 +334,68 @@ const storedServer = localStorage.getItem("legion_server");
 if (storedServer) {
   serverUrlInput.value = storedServer;
 }
+if (speedDial && speedValue) {
+  speedValue.textContent = speedDial.value;
+  speedDial.addEventListener("input", () => {
+    speedValue.textContent = speedDial.value;
+  });
+}
 refreshRobots();
 log("ui ready");
 
 videoEl.addEventListener("load", () => {
-  if (videoFramePending) {
-    videoFramePending = false;
+  if (videoState.pending) {
+    videoState.pending = false;
   }
   if (!firstFrameSeen) {
     firstFrameSeen = true;
     log("live started: first video frame received");
   }
+});
+
+thermalEl.addEventListener("load", () => {
+  if (thermalState.pending) {
+    thermalState.pending = false;
+  }
+});
+
+const keyDownCommands = {
+  w: "MOVE_FORWARD",
+  s: "MOVE_BACK",
+  a: "MOVE_LEFT",
+  d: "MOVE_RIGHT",
+};
+const keyUpCommands = {
+  w: "FORWARD_STOP",
+  s: "BACK_STOP",
+  a: "LEFT_STOP",
+  d: "RIGHT_STOP",
+};
+
+document.addEventListener("keydown", (event) => {
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if (["INPUT", "TEXTAREA"].includes(tag)) {
+    return;
+  }
+  const key = event.key.toLowerCase();
+  if (!["w", "a", "s", "d"].includes(key)) {
+    return;
+  }
+  if (pressedKeys.has(key)) {
+    return;
+  }
+  event.preventDefault();
+  pressedKeys.add(key);
+  sendDriveCommand(keyDownCommands[key]);
+});
+
+document.addEventListener("keyup", (event) => {
+  const key = event.key.toLowerCase();
+  if (!["w", "a", "s", "d"].includes(key)) {
+    return;
+  }
+  event.preventDefault();
+  pressedKeys.delete(key);
+  sendDriveCommand(keyUpCommands[key]);
 });
 

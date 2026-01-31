@@ -70,7 +70,7 @@ button:disabled {
 
 .grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
@@ -89,6 +89,20 @@ button:disabled {
   border-radius: 8px;
   min-height: 120px;
   white-space: pre-wrap;
+}
+
+.drive-grid {
+  display: grid;
+  grid-template-columns: 80px 80px 80px;
+  grid-template-rows: 60px 60px 60px;
+  gap: 10px;
+  justify-content: start;
+  align-items: center;
+}
+
+.drive-grid button {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 @media (max-width: 900px) {

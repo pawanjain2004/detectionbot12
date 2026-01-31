@@ -33,6 +33,23 @@ telemetry_clients = {}
 telemetry_lock = threading.Lock()
 
 
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify(
+        {
+            "ok": True,
+            "service": "legionm3",
+            "robots": len(robots),
+            "ts": int(time.time()),
+        }
+    )
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"ok": True, "ts": int(time.time())})
+
+
 @app.route("/api/robots", methods=["GET"])
 def list_robots():
     online_only = request.args.get("online") == "1"

@@ -69,13 +69,21 @@
       <section class="panel">
         <h2>Drive</h2>
         <p class="muted">Use W/A/S/D or the buttons. Release to stop.</p>
+        <div class="row">
+          <label>Speed (0-255)</label>
+          <input id="speedDial" type="range" min="0" max="255" value="100" />
+          <span id="speedValue" class="muted">100</span>
+        </div>
         <div class="drive-grid">
+          <div></div>
           <button id="driveUp">W</button>
           <div></div>
-          <button id="driveRight">D</button>
           <button id="driveLeft">A</button>
           <button id="driveStop" class="secondary">Stop</button>
+          <button id="driveRight">D</button>
+          <div></div>
           <button id="driveDown">S</button>
+          <div></div>
         </div>
       </section>
 
