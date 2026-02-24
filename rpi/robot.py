@@ -5,9 +5,12 @@ import urllib.request
 
 import cv2
 import numpy as np
-import board
-import busio
-import adafruit_mlx90640
+
+# --- THERMAL INTEGRATION DISABLED ---
+# import board
+# import busio
+# import adafruit_mlx90640
+
 from websocket import create_connection, WebSocketTimeoutException
 
 try:
@@ -15,9 +18,9 @@ try:
 except Exception:
     GPIO = None
 
-SERVER_BASE = "wss://detectionbot12.onrender.com"
-SERVER_HTTP = "https://detectionbot12.onrender.com"
-ROBOT_UUID = "detectionbot"
+SERVER_BASE = "wss://agraid-rover.onrender.com"
+SERVER_HTTP = "https://agraid-rover.onrender.com"
+ROBOT_UUID = "Agraid"
 ROBOT_TYPE = "rpi-rover"
 WARMUP_URL = SERVER_HTTP
 WARMUP_ATTEMPTS = 3
@@ -31,17 +34,19 @@ MAX_FRAME_DROP = 5
 
 USB_CAM_INDEX = 0
 USB_CAM_CANDIDATES = [USB_CAM_INDEX, 1, 2, 3]
-THERMAL_FPS = 8
-THERMAL_FRAME_WIDTH = 320
-THERMAL_FRAME_HEIGHT = 240
-THERMAL_JPEG_QUALITY = 70
-TEMP_MIN = 20.0
-TEMP_MAX = 40.0
+
+# --- THERMAL SETTINGS DISABLED ---
+# THERMAL_FPS = 8
+# THERMAL_FRAME_WIDTH = 320
+# THERMAL_FRAME_HEIGHT = 240
+# THERMAL_JPEG_QUALITY = 70
+# TEMP_MIN = 20.0
+# TEMP_MAX = 40.0
 
 VIDEO_URL = f"{SERVER_BASE}/ws/video/robot/{ROBOT_UUID}"
-THERMAL_URL = f"{SERVER_BASE}/ws/thermal/robot/{ROBOT_UUID}"
+# THERMAL_URL = f"{SERVER_BASE}/ws/thermal/robot/{ROBOT_UUID}"
 COMMAND_URL = f"{SERVER_BASE}/ws/command/robot/{ROBOT_UUID}"
-TELEMETRY_URL = f"{SERVER_BASE}/ws/telemetry/robot/{ROBOT_UUID}"
+# TELEMETRY_URL = f"{SERVER_BASE}/ws/telemetry/robot/{ROBOT_UUID}"
 
 MOTOR_PINS = {
     "motor1Pin1": 17,  # IN1
@@ -59,8 +64,9 @@ _current_speed = 100
 _pwm_a = None
 _pwm_b = None
 
-_mlx_lock = threading.Lock()
-_mlx = None
+# --- THERMAL STATE DISABLED ---
+# _mlx_lock = threading.Lock()
+# _mlx = None
 
 _latest_usb_frame = None
 _latest_usb_lock = threading.Lock()
@@ -104,6 +110,9 @@ def _wake_server():
     return False
 
 
+# -------------------------
+# COMMAND RECEIVER (KEEP)
+# -------------------------
 def _command_listener():
     ws = None
     while True:
@@ -120,7 +129,7 @@ def _command_listener():
             msg = ws.recv()
             if msg is None:
                 raise RuntimeError("Command socket closed")
-            print(f"[COMMAND] {msg}")
+            print(f"[COMMAND] {msg}")  # logs kept
             _handle_command(msg)
         except WebSocketTimeoutException:
             try:
@@ -180,37 +189,43 @@ def _handle_command(msg):
         _update_motion(forward_backward=0, left_right=0)
 
 
-def _telemetry_sender():
-    ws = None
-    while True:
-        if ws is None:
-            try:
-                ws = _connect(TELEMETRY_URL)
-                print("Telemetry socket connected")
-            except Exception as e:
-                print(f"Telemetry socket error: {e}")
-                time.sleep(2)
-                continue
-        max_temp = _get_max_temp()
-        payload = {
-            "uuid": ROBOT_UUID,
-            "gas_ppm": 0,
-            "temperature_c": max_temp,
-            "ts": int(time.time()),
-        }
-        try:
-            ws.send(json.dumps(payload))
-        except Exception as e:
-            print(f"Telemetry send error: {e}")
-            try:
-                ws.close()
-            except Exception:
-                pass
-            ws = None
-            time.sleep(1)
-        time.sleep(1)
+# -------------------------
+# TELEMETRY SENDER (DISABLED)
+# -------------------------
+# def _telemetry_sender():
+#     ws = None
+#     while True:
+#         if ws is None:
+#             try:
+#                 ws = _connect(TELEMETRY_URL)
+#                 print("Telemetry socket connected")
+#             except Exception as e:
+#                 print(f"Telemetry socket error: {e}")
+#                 time.sleep(2)
+#                 continue
+#         max_temp = _get_max_temp()
+#         payload = {
+#             "uuid": ROBOT_UUID,
+#             "gas_ppm": 0,
+#             "temperature_c": max_temp,
+#             "ts": int(time.time()),
+#         }
+#         try:
+#             ws.send(json.dumps(payload))
+#         except Exception as e:
+#             print(f"Telemetry send error: {e}")
+#             try:
+#                 ws.close()
+#             except Exception:
+#                 pass
+#             ws = None
+#             time.sleep(1)
+#         time.sleep(1)
 
 
+# -------------------------
+# CAMERA CAPTURE (KEEP)
+# -------------------------
 def _open_capture(index, width, height, name, backend):
     cap = cv2.VideoCapture(index, backend)
     if not cap.isOpened():
@@ -251,49 +266,6 @@ def _capture_latest_frames(cap):
             continue
         with _latest_usb_lock:
             _latest_usb_frame = frame
-
-
-def _init_mlx():
-    global _mlx
-    try:
-        i2c = busio.I2C(board.SCL, board.SDA, frequency=400000)
-        mlx = adafruit_mlx90640.MLX90640(i2c)
-        mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
-        _mlx = mlx
-        print("MLX90640 sensor initialized")
-    except Exception as e:
-        _mlx = None
-        print(f"MLX90640 init error: {e}")
-
-
-def _get_thermal_frame():
-    if _mlx is None:
-        return None
-    frame = np.zeros(24 * 32, dtype=np.float32)
-    try:
-        with _mlx_lock:
-            _mlx.getFrame(frame)
-    except Exception:
-        return None
-    return frame.reshape((24, 32))
-
-
-def _thermal_to_image(temp):
-    temp = np.clip(temp, TEMP_MIN, TEMP_MAX)
-    norm = (temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN)
-    img = (norm * 255).astype(np.uint8)
-    img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
-    img = cv2.resize(
-        img, (THERMAL_FRAME_WIDTH, THERMAL_FRAME_HEIGHT), interpolation=cv2.INTER_CUBIC
-    )
-    return img
-
-
-def _get_max_temp():
-    temp = _get_thermal_frame()
-    if temp is None:
-        return None
-    return float(np.max(temp))
 
 
 def _video_sender(ws_url, target_fps, jpeg_quality):
@@ -339,51 +311,100 @@ def _video_sender(ws_url, target_fps, jpeg_quality):
         next_frame_time += 1.0 / target_fps
 
 
-def _thermal_sender():
-    ws = None
-    next_frame_time = time.monotonic()
-    while True:
-        if _mlx is None:
-            time.sleep(2)
-            continue
-        if ws is None:
-            try:
-                ws = _connect(THERMAL_URL)
-                print("Thermal socket connected")
-            except Exception as e:
-                print(f"Thermal socket error: {e}")
-                time.sleep(2)
-                continue
-        now = time.monotonic()
-        if now < next_frame_time:
-            time.sleep(next_frame_time - now)
-        else:
-            next_frame_time = now
-        temp = _get_thermal_frame()
-        if temp is None:
-            continue
-        image = _thermal_to_image(temp)
-        ok, buffer = cv2.imencode(
-            ".jpg",
-            image,
-            [int(cv2.IMWRITE_JPEG_QUALITY), THERMAL_JPEG_QUALITY],
-        )
-        if not ok:
-            continue
-        try:
-            ws.send(buffer.tobytes(), opcode=0x2)
-        except Exception as e:
-            print(f"Thermal send error: {e}")
-            try:
-                ws.close()
-            except Exception:
-                pass
-            ws = None
-            time.sleep(1)
-            continue
-        next_frame_time += 1.0 / THERMAL_FPS
+# -------------------------
+# THERMAL FUNCTIONS (DISABLED)
+# -------------------------
+# def _init_mlx():
+#     global _mlx
+#     try:
+#         i2c = busio.I2C(board.SCL, board.SDA, frequency=400000)
+#         mlx = adafruit_mlx90640.MLX90640(i2c)
+#         mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
+#         _mlx = mlx
+#         print("MLX90640 sensor initialized")
+#     except Exception as e:
+#         _mlx = None
+#         print(f"MLX90640 init error: {e}")
+#
+#
+# def _get_thermal_frame():
+#     if _mlx is None:
+#         return None
+#     frame = np.zeros(24 * 32, dtype=np.float32)
+#     try:
+#         with _mlx_lock:
+#             _mlx.getFrame(frame)
+#     except Exception:
+#         return None
+#     return frame.reshape((24, 32))
+#
+#
+# def _thermal_to_image(temp):
+#     temp = np.clip(temp, TEMP_MIN, TEMP_MAX)
+#     norm = (temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN)
+#     img = (norm * 255).astype(np.uint8)
+#     img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
+#     img = cv2.resize(
+#         img, (THERMAL_FRAME_WIDTH, THERMAL_FRAME_HEIGHT), interpolation=cv2.INTER_CUBIC
+#     )
+#     return img
+#
+#
+# def _get_max_temp():
+#     temp = _get_thermal_frame()
+#     if temp is None:
+#         return None
+#     return float(np.max(temp))
+#
+#
+# def _thermal_sender():
+#     ws = None
+#     next_frame_time = time.monotonic()
+#     while True:
+#         if _mlx is None:
+#             time.sleep(2)
+#             continue
+#         if ws is None:
+#             try:
+#                 ws = _connect(THERMAL_URL)
+#                 print("Thermal socket connected")
+#             except Exception as e:
+#                 print(f"Thermal socket error: {e}")
+#                 time.sleep(2)
+#                 continue
+#         now = time.monotonic()
+#         if now < next_frame_time:
+#             time.sleep(next_frame_time - now)
+#         else:
+#             next_frame_time = now
+#         temp = _get_thermal_frame()
+#         if temp is None:
+#             continue
+#         image = _thermal_to_image(temp)
+#         ok, buffer = cv2.imencode(
+#             ".jpg",
+#             image,
+#             [int(cv2.IMWRITE_JPEG_QUALITY), THERMAL_JPEG_QUALITY],
+#         )
+#         if not ok:
+#             continue
+#         try:
+#             ws.send(buffer.tobytes(), opcode=0x2)
+#         except Exception as e:
+#             print(f"Thermal send error: {e}")
+#             try:
+#                 ws.close()
+#             except Exception:
+#                 pass
+#             ws = None
+#             time.sleep(1)
+#             continue
+#         next_frame_time += 1.0 / THERMAL_FPS
 
 
+# -------------------------
+# MOTOR CONTROL (KEEP)
+# -------------------------
 def _setup_gpio():
     if GPIO is None:
         print("RPi.GPIO not available; motor control disabled")
@@ -480,16 +501,27 @@ if __name__ == "__main__":
     _wake_server()
     _register_robot()
     _setup_gpio()
-    _init_mlx()
+
+    # --- THERMAL INIT DISABLED ---
+    # _init_mlx()
+
     usb_cap = _open_capture_with_fallbacks(FRAME_WIDTH, FRAME_HEIGHT, "USB")
+
     threading.Thread(target=_command_listener, daemon=True).start()
-    threading.Thread(target=_telemetry_sender, daemon=True).start()
+
+    # --- SENSOR TELEMETRY DISABLED ---
+    # threading.Thread(target=_telemetry_sender, daemon=True).start()
+
     threading.Thread(target=_capture_latest_frames, args=(usb_cap,), daemon=True).start()
+
     threading.Thread(
         target=_video_sender,
         args=(VIDEO_URL, TARGET_FPS, JPEG_QUALITY),
         daemon=True,
     ).start()
-    threading.Thread(target=_thermal_sender, daemon=True).start()
+
+    # --- THERMAL STREAM DISABLED ---
+    # threading.Thread(target=_thermal_sender, daemon=True).start()
+
     while True:
         time.sleep(1)

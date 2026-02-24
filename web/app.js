@@ -27,7 +27,7 @@ const driveStopBtn = document.getElementById("driveStop");
 const speedDial = document.getElementById("speedDial");
 const speedValue = document.getElementById("speedValue");
 
-const SERVER_HTTP_BASE = "https://detectionbot12.onrender.com";
+const SERVER_HTTP_BASE = "https://agraid-rover.onrender.com";
 const ROBOT_UUID = "detectionbot";
 const CLIENT_ID = "web-control";
 
