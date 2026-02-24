@@ -1,17 +1,99 @@
 <!DOCTYPE html>
-<html>
-<head><title>Live Stream</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSocket Video Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 16px;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    input {
+      padding: 8px;
+      min-width: 260px;
+    }
+    button {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    #status {
+      margin-left: 8px;
+      font-weight: 600;
+    }
+    #video {
+      width: min(100%, 960px);
+      border: 1px solid #d1d5db;
+      background: #000;
+    }
+  </style>
+</head>
 <body>
-  <img id="video" />
+  <h1>WebSocket Video Viewer</h1>
+  <div class="row">
+    <input id="serverBase" />
+    <input id="robotId" />
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn">Disconnect</button>
+    <span id="status">Idle</span>
+  </div>
+  <img id="video" alt="Live feed" />
+
   <script>
     const img = document.getElementById("video");
-    const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws";
+    const statusEl = document.getElementById("status");
+    const serverBaseEl = document.getElementById("serverBase");
+    const robotIdEl = document.getElementById("robotId");
+    const connectBtn = document.getElementById("connectBtn");
+    const disconnectBtn = document.getElementById("disconnectBtn");
+
+    const params = new URLSearchParams(window.location.search);
+    const defaultServer =
+      params.get("server") ||
+      "https://detectionbot12-colo.onrender.com";
+    const defaultRobot = params.get("robot") || "Agraid";
+
+    serverBaseEl.value = defaultServer;
+    robotIdEl.value = defaultRobot;
+
+    let ws = null;
     let currentUrl = null;
 
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function toWsBase(httpBase) {
+      return httpBase.replace(/\/+$/, "").replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+    }
+
     function connect() {
-      const ws = new WebSocket(wsUrl);
+      const serverBase = serverBaseEl.value.trim();
+      const robotId = robotIdEl.value.trim();
+      if (!serverBase || !robotId) {
+        setStatus("Server and robot ID required");
+        return;
+      }
+
+      disconnect();
+
+      const wsUrl = `${toWsBase(serverBase)}/ws/video/client/${encodeURIComponent(robotId)}`;
+      setStatus(`Connecting: ${wsUrl}`);
+      ws = new WebSocket(wsUrl);
       ws.binaryType = "arraybuffer";
 
+      ws.onopen = () => setStatus("Connected");
+      ws.onerror = () => setStatus("Socket error");
+      ws.onclose = () => setStatus("Disconnected");
       ws.onmessage = (event) => {
         const blob = new Blob([event.data], { type: "image/jpeg" });
         const nextUrl = URL.createObjectURL(blob);
@@ -21,12 +103,17 @@
         }
         currentUrl = nextUrl;
       };
-
-      ws.onclose = () => {
-        setTimeout(connect, 1000);
-      };
     }
 
+    function disconnect() {
+      if (ws && ws.readyState <= 1) {
+        ws.close();
+      }
+      ws = null;
+    }
+
+    connectBtn.addEventListener("click", connect);
+    disconnectBtn.addEventListener("click", disconnect);
     connect();
   </script>
 </body>
