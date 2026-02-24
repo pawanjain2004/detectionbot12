@@ -28,7 +28,7 @@ const speedDial = document.getElementById("speedDial");
 const speedValue = document.getElementById("speedValue");
 
 const SERVER_HTTP_BASE = "https://agraid-rover.onrender.com";
-const ROBOT_UUID = "detectionbot";
+const ROBOT_UUID = "Agraid";
 const CLIENT_ID = "web-control";
 
 const ROBOT_OFFLINE_MS = 10000; // no frame/telemetry for this long = robot offline
