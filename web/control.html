@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rover Control | Agriaid</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <div class="site-nav-inner">
+        <a href="./" class="site-nav-brand">Agriaid</a>
+        <div class="site-nav-links">
+          <a href="./" class="site-nav-link">About Us</a>
+          <a href="./control.html" class="site-nav-link site-nav-link-active">Rover Control</a>
+        </div>
+      </div>
+    </nav>
+
+    <section class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-brand">
+          <p class="eyebrow">Field Station</p>
+          <h1>Detection Bot</h1>
+        </div>
+        <div class="topbar-controls">
+          <div class="top-item top-item-wide">
+            <label>Server</label>
+            <input id="serverUrl" value="https://detectionbot12-colo.onrender.com" readonly />
+          </div>
+          <div class="top-item">
+            <label>Robot</label>
+            <input id="robotId" value="Agraid" readonly />
+          </div>
+          <button id="connect">Connect</button>
+          <button id="disconnect" class="secondary">Disconnect</button>
+          <p id="status" class="status-pill">Status: idle</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="page">
+      <header class="hero compact-hero">
+        <h2>Field Operations Dashboard</h2>
+        <p class="muted">Live vision, leaf health inference, and rover drive control.</p>
+      </header>
+
+      <section class="grid compact-grid">
+        <div class="panel">
+          <h2>Primary Camera</h2>
+          <img id="video" class="video" alt="Live feed" />
+          <label class="stream-option">
+            <input id="useMjpeg" type="checkbox" />
+            Use MJPEG (HTTP)
+          </label>
+          <div class="capture-panel">
+            <div class="row compact capture-row">
+              <button id="captureFrame">Capture frame</button>
+              <span id="predictionStatus" class="muted">No prediction yet.</span>
+            </div>
+            <div class="prediction-grid">
+              <div class="prediction-card">
+                <p class="metric-label">Prediction</p>
+                <p id="predictionLabel" class="metric-value">--</p>
+                <p class="metric-unit">label</p>
+              </div>
+              <div class="prediction-card">
+                <p class="metric-label">Confidence</p>
+                <p id="predictionConfidence" class="metric-value">--</p>
+                <p class="metric-unit">%</p>
+              </div>
+            </div>
+            <div class="prediction-card">
+              <p class="metric-label">All Confidences</p>
+              <div id="predictionList" class="prediction-list">--</div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Captured Image</h2>
+          <img id="capturePreview" class="video capture-preview" alt="Captured frame preview" />
+          <p class="muted">Latest captured frame sent to the model.</p>
+        </div>
+      </section>
+
+      <section class="panel control-panel">
+        <h2>Drive Control</h2>
+        <p class="muted">Use W/A/S/D or the buttons. Release to stop.</p>
+        <div class="row compact speed-row">
+          <label for="speedDial">Speed (0-255)</label>
+          <input id="speedDial" type="range" min="0" max="255" value="100" />
+          <span id="speedValue" class="muted">100</span>
+        </div>
+        <div class="drive-grid">
+          <div></div>
+          <button id="driveUp">W</button>
+          <div></div>
+          <button id="driveLeft">A</button>
+          <button id="driveStop" class="secondary">Stop</button>
+          <button id="driveRight">D</button>
+          <div></div>
+          <button id="driveDown">S</button>
+          <div></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Manual Commands</h2>
+        <div class="row compact">
+          <input id="commandInput" placeholder="e.g. MOVE_FORWARD" />
+          <button id="sendCommand">Send</button>
+        </div>
+        <pre id="commandLog" class="telemetry">No commands yet.</pre>
+      </section>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>

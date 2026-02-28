@@ -1,0 +1,9 @@
+{
+  "buildCommand": null,
+  "outputDirectory": "web",
+  "routes": [
+    { "src": "/control", "dest": "/control.html" },
+    { "src": "/stream", "dest": "/stream.html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}

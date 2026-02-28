@@ -3,106 +3,206 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Detection bot Control Center</title>
+    <title>About Us | Agriaid</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              bgdeep: '#0b120d',
+              bgmid: '#152017',
+              bgsurface: 'rgba(21, 32, 23, 0.85)',
+              bgpanel: 'rgba(19, 28, 20, 0.92)',
+              line: 'rgba(140, 170, 140, 0.2)',
+              accent: '#6fbf73',
+              accentstrong: '#3c8d5c',
+              accentsoft: 'rgba(111, 191, 115, 0.15)',
+              textmain: '#f3f7f1',
+              textmuted: '#b8c7ba',
+              textdim: '#8ea392',
+            },
+            fontFamily: {
+              body: ['Manrope', 'Segoe UI', 'sans-serif'],
+              heading: ['Playfair Display', 'Georgia', 'serif'],
+            },
+          },
+        },
+      }
+    </script>
+    <style>
+      body.about-page-body {
+        background:
+          radial-gradient(circle at 15% 10%, rgba(79, 135, 89, 0.35), transparent 40%),
+          radial-gradient(circle at 80% 15%, rgba(34, 82, 55, 0.45), transparent 45%),
+          linear-gradient(180deg, #0a120d 0%, #0b150f 40%, #0a0f0c 100%);
+        background-attachment: fixed;
+      }
+      body.about-page-body::before,
+      body.about-page-body::after { display: none !important; }
+    </style>
   </head>
-  <body>
-    <section class="topbar">
-      <div class="topbar-inner">
-        <div class="topbar-brand">
-          <p class="eyebrow">Field Station</p>
-          <h1>Detection Bot</h1>
+  <body class="about-page-body min-h-screen font-body text-textmain antialiased">
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="site-nav">
+      <div class="site-nav-inner">
+        <a href="./" class="site-nav-brand">Agriaid</a>
+        <div class="site-nav-links">
+          <a href="./" class="site-nav-link site-nav-link-active">About Us</a>
+          <a href="./control.html" class="site-nav-link">Rover Control</a>
         </div>
-        <div class="topbar-controls">
-          <div class="top-item top-item-wide">
-            <label>Server</label>
-            <input id="serverUrl" value="https://detectionbot12-colo.onrender.com" readonly />
+      </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <header class="border-b border-line bg-bgsurface backdrop-blur-sm mt-[52px]">
+      <div class="max-w-5xl mx-auto px-6 py-16 md:py-20 text-center">
+        <p class="text-xs tracking-[0.18em] uppercase text-accent mb-3">Field Station</p>
+        <h1 class="font-heading text-4xl md:text-5xl font-semibold text-textmain tracking-tight mb-4">
+          Agriaid
+        </h1>
+        <p class="text-base md:text-lg text-textmuted leading-relaxed max-w-2xl mx-auto">
+          Agriaid is a rover that captures plant leaf images to help
+          <span class="text-accent font-semibold">detect crop diseases early</span>
+          and reduce agricultural losses — helping farmers increase yield and cut wastage.
+        </p>
+      </div>
+    </header>
+
+    <!-- ===== IMPACT SECTION WITH 3-COL GRID ===== -->
+    <section>
+      <div class="max-w-5xl mx-auto px-6 py-14 md:py-20">
+        <h2 class="font-heading text-2xl md:text-3xl font-semibold text-textmain text-center mb-3">
+          Our impact till now
+        </h2>
+        <p class="text-center text-textmuted max-w-xl mx-auto mb-12 text-sm md:text-base">
+          Agriaid has been built to make a real difference for farmers — helping them spot crop diseases early and protect their harvests.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_300px_1fr] gap-8 lg:gap-10 items-start">
+
+          <!-- LEFT COLUMN -->
+          <div class="flex flex-col gap-10 lg:text-right">
+            <div>
+              <p class="font-heading text-4xl font-bold text-accent leading-none mb-2">1</p>
+              <p class="font-semibold text-textmain mb-1">Early disease detection</p>
+              <p class="text-sm text-textmuted leading-relaxed">
+                The rover captures leaf images and our ML model identifies healthy vs unhealthy plants so farmers can act before losses spread.
+              </p>
+            </div>
+            <div>
+              <p class="font-heading text-4xl font-bold text-accent leading-none mb-2">2</p>
+              <p class="font-semibold text-textmain mb-1">Built for real farms</p>
+              <p class="text-sm text-textmuted leading-relaxed">
+                Tested with farmers; their feedback led to a simple web app for rover control — no extra controller cost, easier to use.
+              </p>
+            </div>
           </div>
-          <div class="top-item">
-            <label>Robot</label>
-            <input id="robotId" value="Agraid" readonly />
+
+          <!-- CENTER — ROVER IMAGE -->
+          <div class="flex justify-center lg:row-span-2 order-first lg:order-none">
+            <div class="bg-bgpanel border border-line overflow-hidden w-full max-w-[300px]">
+              <img
+                src="./i.png"
+                alt="Agriaid rover for crop disease detection"
+                class="w-full h-auto object-contain"
+              />
+            </div>
           </div>
-          <button id="connect">Connect</button>
-          <button id="disconnect" class="secondary">Disconnect</button>
-          <p id="status" class="status-pill">Status: idle</p>
+
+          <!-- RIGHT COLUMN -->
+          <div class="flex flex-col gap-10 lg:text-left">
+            <div>
+              <p class="font-heading text-4xl font-bold text-accent leading-none mb-2">3</p>
+              <p class="font-semibold text-textmain mb-1">Cost-effective design</p>
+              <p class="text-sm text-textmuted leading-relaxed">
+                Designed to be affordable so small and marginal farmers can access early detection without expensive machinery.
+              </p>
+            </div>
+            <div>
+              <p class="font-heading text-4xl font-bold text-accent leading-none mb-2">4</p>
+              <p class="font-semibold text-textmain mb-1">From field to classroom</p>
+              <p class="text-sm text-textmuted leading-relaxed">
+                Demonstrated at school exhibitions and shared with farmers and NGOs to spread awareness and scale impact.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 5 — full width below -->
+        <div class="mt-10 text-center max-w-xl mx-auto">
+          <p class="font-heading text-4xl font-bold text-accent leading-none mb-2">5</p>
+          <p class="font-semibold text-textmain mb-1">Raising awareness</p>
+          <p class="text-sm text-textmuted leading-relaxed">
+            Raised awareness about the importance of sustainable practices, inspiring positive change across communities.
+          </p>
         </div>
       </div>
     </section>
 
-    <div class="page">
-      <header class="hero compact-hero">
-        <h2>Field Operations Dashboard</h2>
-        <p class="muted">Live vision, leaf health inference, and rover drive control.</p>
-      </header>
+    <!-- ===== PROBLEM STATEMENT ===== -->
+    <section class="bg-bgsurface border-t border-b border-line backdrop-blur-sm">
+      <div class="max-w-5xl mx-auto px-6 py-14 md:py-16">
+        <div class="border-t-2 border-accent pt-6">
+          <h2 class="font-heading text-xl md:text-2xl font-semibold text-textmain mb-4">The problem we tackle</h2>
+          <p class="text-textmuted leading-relaxed text-[15px]">
+            Many farmers rely on manual inspection to detect plant diseases — time-consuming and often inaccurate.
+            Early symptoms are easily missed, leading to widespread infection, excessive pesticide use, reduced crop yield,
+            and financial losses. In India, <strong class="text-textmain">up to 40% of crops</strong> are affected by diseases, with the country
+            losing approximately <strong class="text-textmain">₹50,000+ crore annually</strong>. According to the UN FAO (2022),
+            <strong class="text-textmain">224.3 million people</strong> in India are undernourished. Agriaid helps farmers identify diseases
+            early so they can treat crops before significant damage — without the cost of expensive machinery.
+          </p>
+        </div>
+      </div>
+    </section>
 
-      <section class="grid compact-grid">
-        <div class="panel">
-          <h2>Primary Camera</h2>
-          <img id="video" class="video" alt="Live feed" />
-          <label class="stream-option">
-            <input id="useMjpeg" type="checkbox" />
-            Use MJPEG (HTTP)
-          </label>
-          <div class="capture-panel">
-            <div class="row compact capture-row">
-              <button id="captureFrame">Capture frame</button>
-              <span id="predictionStatus" class="muted">No prediction yet.</span>
-            </div>
-            <div class="prediction-grid">
-              <div class="prediction-card">
-                <p class="metric-label">Prediction</p>
-                <p id="predictionLabel" class="metric-value">--</p>
-                <p class="metric-unit">label</p>
-              </div>
-              <div class="prediction-card">
-                <p class="metric-label">Confidence</p>
-                <p id="predictionConfidence" class="metric-value">--</p>
-                <p class="metric-unit">%</p>
-              </div>
-            </div>
-            <div class="prediction-card">
-              <p class="metric-label">All Confidences</p>
-              <div id="predictionList" class="prediction-list">--</div>
-            </div>
+    <!-- ===== HOW IT WORKS ===== -->
+    <section class="bg-bgpanel">
+      <div class="max-w-5xl mx-auto px-6 py-14 md:py-16">
+        <h2 class="font-heading text-xl md:text-2xl font-semibold text-textmain mb-4">How Agriaid works</h2>
+        <p class="text-textmuted text-[15px] leading-relaxed">
+          The rover navigates agricultural areas and captures images of plant leaves at regular intervals.
+          Our pipeline uses <strong class="text-textmain">YOLOv8</strong> to detect and crop individual leaves, then a classification model
+          predicts whether each leaf is <strong class="text-textmain">healthy or unhealthy</strong> and shows the result with confidence
+          on the web app. The rover is controlled and viewed via a live camera feed from the dashboard — each captured
+          image is stored and results are displayed alongside it.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== INSPIRATION & FUTURE ===== -->
+    <section class="bg-bgsurface border-t border-line backdrop-blur-sm">
+      <div class="max-w-5xl mx-auto px-6 py-14 md:py-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-0">
+          <div class="border-b md:border-b-0 md:border-r border-line pb-8 md:pb-0 md:pr-10">
+            <h2 class="font-heading text-lg md:text-xl font-semibold text-textmain mb-3">What inspired us</h2>
+            <p class="text-sm text-textmuted leading-relaxed">
+              A family trip to Baran, Rajasthan, exposed the real challenges farmers face — crops with abnormal spots
+              and discoloration, and the difficulty of early detection with limited resources. That experience led to
+              building Agriaid to make a change at scale.
+            </p>
+          </div>
+          <div class="pt-8 md:pt-0 md:pl-10">
+            <h2 class="font-heading text-lg md:text-xl font-semibold text-textmain mb-3">What's next</h2>
+            <p class="text-sm text-textmuted leading-relaxed">
+              Reaching out to NGOs and more farmers to test and refine the rover. After the testing phase, we aim
+              to automate the rover further and scale so more farms can use Agriaid to increase crop yield and
+              reduce wastage.
+            </p>
           </div>
         </div>
-        <div class="panel">
-          <h2>Captured Image</h2>
-          <img id="capturePreview" class="video capture-preview" alt="Captured frame preview" />
-          <p class="muted">Latest captured frame sent to the model.</p>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="panel control-panel">
-        <h2>Drive Control</h2>
-        <p class="muted">Use W/A/S/D or the buttons. Release to stop.</p>
-        <div class="row compact speed-row">
-          <label for="speedDial">Speed (0-255)</label>
-          <input id="speedDial" type="range" min="0" max="255" value="100" />
-          <span id="speedValue" class="muted">100</span>
-        </div>
-        <div class="drive-grid">
-          <div></div>
-          <button id="driveUp">W</button>
-          <div></div>
-          <button id="driveLeft">A</button>
-          <button id="driveStop" class="secondary">Stop</button>
-          <button id="driveRight">D</button>
-          <div></div>
-          <button id="driveDown">S</button>
-          <div></div>
-        </div>
-      </section>
+    <!-- ===== FOOTER ===== -->
+    <footer class="border-t border-line">
+      <div class="max-w-5xl mx-auto px-6 py-8 text-center">
+        <p class="font-heading text-sm text-textdim">&copy; 2026 Agriaid. All rights reserved.</p>
+      </div>
+    </footer>
 
-      <section class="panel">
-        <h2>Manual Commands</h2>
-        <div class="row compact">
-          <input id="commandInput" placeholder="e.g. MOVE_FORWARD" />
-          <button id="sendCommand">Send</button>
-        </div>
-        <pre id="commandLog" class="telemetry">No commands yet.</pre>
-      </section>
-    </div>
-    <script src="./app.js"></script>
   </body>
 </html>
